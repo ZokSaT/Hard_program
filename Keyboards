@@ -1,0 +1,48 @@
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+
+klava_menu = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Погода')],
+                                     [KeyboardButton(text='Гороскоп')],
+                                     [KeyboardButton(text='Валюты и крипта')]],
+                            resize_keyboard= True,
+                            input_field_placeholder= 'Выберите пункт меню...')
+
+klava_menu_money = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Курс Bitcoin')],
+                                     [KeyboardButton(text='Доллар'),KeyboardButton(text='Евро')],
+                                     [KeyboardButton(text='Юань')],
+                                     [KeyboardButton(text='Главное меню')]],
+                            resize_keyboard= True,
+                            input_field_placeholder= 'Выберите пункт меню...')
+
+klava_pogoda = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Челябинск')],
+                                     [KeyboardButton(text='Москва')],
+                                     [KeyboardButton(text='Екатеринбург')],
+                                     [KeyboardButton(text='Главное меню'), KeyboardButton(text='История')]],
+                            resize_keyboard= True,
+                            input_field_placeholder= 'Выберите пункт меню...')
+
+klava_znak = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='Овен', callback_data='aries'), InlineKeyboardButton(text='Телец', callback_data='taurus'), InlineKeyboardButton(text='Близнецы', callback_data='gemini')],
+                                           [InlineKeyboardButton(text='Рак', callback_data='cancer'), InlineKeyboardButton(text='Лев', callback_data='leo'), InlineKeyboardButton(text='Дева', callback_data='virgo')],
+                                            [InlineKeyboardButton(text='Весы', callback_data='libra'), InlineKeyboardButton(text='Скорпион', callback_data='scorpio'), InlineKeyboardButton(text='Стрелец', callback_data='sagittarius')],
+                                            [InlineKeyboardButton(text='Козерог', callback_data='capricorn'), InlineKeyboardButton(text='Водолей', callback_data='aquarius'), InlineKeyboardButton(text='Рыбы', callback_data='pisces')]],
+                            resize_keyboard= True,
+                            input_field_placeholder= 'Выберите пункт меню...')
+
+klava_znak_date = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Вчера')],
+                                     [KeyboardButton(text='Сегодня')],
+                                     [KeyboardButton(text='Завтра')],
+                                     [KeyboardButton(text='Неделя')]],
+                            resize_keyboard= True,
+                            input_field_placeholder= 'Выберите пункт меню...')
+
+klava_reg = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Оставить свои данные', request_contact = True), KeyboardButton(text='Пропустить')]],
+                                resize_keyboard= True)
+
+klava_rec = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='Узнать подробности', callback_data='podrobno')]])
+
+klava_history_date = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='Ночь: 00:00-5:59', callback_data='Ночь')],
+                                                  [InlineKeyboardButton(text='Утро: 6:00-11:59', callback_data='Утро')],
+                                                  [InlineKeyboardButton(text='Обед: 12:00-17:59', callback_data='Обед')],
+                                                  [InlineKeyboardButton(text='Вечер: 18:00-23:59', callback_data='Вечер')]])
+
+
+
