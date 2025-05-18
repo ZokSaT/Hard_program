@@ -1,0 +1,11 @@
+from aiogram.fsm.state import State, StatesGroup
+class Darka(StatesGroup):
+    month = State()
+    setd = State()
+    gorodok = State()
+class Registered(StatesGroup):
+    nem = State()
+class Recom(StatesGroup):
+    timur = State()
+class Money(StatesGroup):
+    bablo = State()
