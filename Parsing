@@ -1,0 +1,98 @@
+import requests
+from bs4 import BeautifulSoup
+
+#ПОГОДА
+def get_html(url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'
+    }
+    response = requests.get(url, headers=headers)
+    html = response.text
+    return html
+def get_weather(gorod):
+    url = f'https://world-weather.ru/pogoda/russia/{gorod}/'
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+    try:
+        temp = soup.find('div', id = 'weather-now-number').get_text(strip=True)
+        return temp
+    except:
+        print('ОШИБКА')
+
+def get_weather_data(gorod):
+    url = f'https://world-weather.ru/pogoda/russia/{gorod}/'
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+    try:
+        time = soup.find_all('b')#.get_text(strip=True)
+        return time[3].text
+    except:
+        print('ОШИБКА')
+
+def get_weather_gorod(gorod):
+    url = f'https://world-weather.ru/pogoda/russia/{gorod}/'
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+    try:
+        gorodok = soup.find('span', id='bread-crumbs-c').get_text(strip=True)
+        return gorodok
+    except:
+        print('ОШИБКА')
+
+def get_weather_rec(gorod):
+    url = f'https://world-weather.ru/pogoda/russia/{gorod}/'
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+    try:
+        rec = soup.find('span', class_ = 'dw-into',).get_text(strip=True)
+        rec = rec[:rec.find('Подробнее')]
+        return rec
+    except:
+        print('ОШИБКА')
+#-----------------------------------------------------------------------------------------------------------
+#ВАЛЮТЫ И КРИПТА
+def BTC():
+    response = requests.get(url='https://yobit.net/api/3/ticker/btc_usd')
+    data = response.json()
+    btc_price = f"BTC: {round(data.get('btc_usd').get('last'), 2)}$\n"
+    return  btc_price
+
+def USD():
+    url = f'https://bankiros.ru/currency/chelyabinsk'
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+    try:
+        money = soup.find('div', class_ = 'xxx-text-bold xxx-fs-20 xxx-adjustment-line-h',).get_text(strip=True)
+        return money
+    except:
+        print('ОШИБКА')
+def EUR():
+    url = f'https://bankiros.ru/currency/chelyabinsk'
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+    try:
+        money = soup.find_all('div', class_ = 'xxx-text-bold xxx-fs-20 xxx-adjustment-line-h')
+        return money[2].get_text(strip=True)
+    except:
+        print('ОШИБКА')
+
+def CNY():
+    url = f'https://bankiros.ru/currency/chelyabinsk'
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+    try:
+        money = soup.find_all('div', class_ = 'xxx-text-bold xxx-fs-20 xxx-adjustment-line-h',)
+        return money[4].get_text(strip=True)
+    except:
+        print('ОШИБКА')
+#-----------------------------------------------------------------------------------------------------------------------
+#ГОРОСКОП
+def get_znak(znak):
+    url = f'https://horoscopes.rambler.ru/{znak}/'
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+    try:
+        zodiak = soup.find('p', class_ = '_5yHoW AjIPq').get_text(strip=True)
+        return zodiak
+    except:
+        print('ОШИБКА')
