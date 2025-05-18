@@ -1,0 +1,230 @@
+import psycopg2
+from psycopg2 import sql
+from datetime import datetime
+
+from Project.Parsing import get_weather, get_weather_gorod, get_weather_data
+from config import hostik, userik, passwordik, datab
+
+def razmen(timerok):
+    timerok, date = timerok.split(', ')
+    return timerok, date
+
+def update(login, gorod):
+    try:
+        connection = psycopg2.connect(
+            host=hostik,
+            user=userik,
+            password=passwordik,
+            database=datab)
+        connection.autocommit = True
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT version();")
+            print(f"Server version: {cursor.fetchone()}")
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""INSERT INTO History_pagoda (login, gorod, date, time, pogoda) VALUES
+                (%s, %s, %s, %s, %s)""",
+                (login, get_weather_gorod(gorod), razmen(get_weather_data(gorod))[1], razmen(get_weather_data(gorod))[0], get_weather(gorod)))
+    except Exception as _ex:
+        print("[INFO] Error while working with PostgreSQL", _ex)
+    finally:
+        if connection:
+            connection.close()
+            print("[INFO] PostgreSQL connection closed")
+
+def delet_table(nazva):
+    try:
+        connection = psycopg2.connect(
+            host=hostik,
+            user=userik,
+            password=passwordik,
+            database=datab)
+        connection.autocommit = True
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""DROP TABLE {nazva};""")
+    except Exception as _ex:
+        print("[INFO] Error while working with PostgreSQL", _ex)
+    finally:
+        if connection:
+            connection.close()
+            print("[INFO] PostgreSQL connection closed")
+
+def delet_str(nazva, stroka):
+    try:
+        connection = psycopg2.connect(
+            host=hostik,
+            user=userik,
+            password=passwordik,
+            database=datab)
+        connection.autocommit = True
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""DELETE FROM {nazva} WHERE {stroka};""")
+    except Exception as _ex:
+        print("[INFO] Error while working with PostgreSQL", _ex)
+    finally:
+        if connection:
+            connection.close()
+            print("[INFO] PostgreSQL connection closed")
+
+
+def create(nazva):
+    try:
+        connection = psycopg2.connect(
+            host=hostik,
+            user=userik,
+            password=passwordik,
+            database=datab)
+        connection.autocommit = True
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""CREATE TABLE {nazva}(
+                        id serial PRIMARY KEY,
+                        login varchar(50) NOT NULL,
+                        gorod varchar(50) NOT NULL,
+                        date varchar(50) NOT NULL,
+                        time varchar(50) NOT NULL,
+                        pogoda varchar(50) NOT NULL);""")
+    except Exception as _ex:
+        print("[INFO] Error while working with PostgreSQL", _ex)
+    finally:
+        if connection:
+            connection.close()
+            print("[INFO] PostgreSQL connection closed")
+
+def str_to_time(time_str):
+    return datetime.strptime(time_str, "%H:%M").time()
+
+
+def timeret(time_str):
+    timer = str_to_time(time_str)
+    time_morning = str_to_time('06:00')
+    time_lunch = str_to_time('12:00')
+    time_evening = str_to_time('18:00')
+    time_night = str_to_time('00:00')
+
+    if timer >= time_night and timer < time_morning:
+        return "Ночь"
+    elif timer >= time_morning and timer < time_lunch:
+        return "Утро"
+    elif timer >= time_lunch and timer < time_evening:
+        return "После обеда"
+    elif timer >= time_evening:
+        return "Вечер"
+
+
+def goo(login, date, kurs):
+    x = 'Возможно вы не пользовались измерением погоды в это время, попробуйте другой интервал'
+    try:
+        connection = psycopg2.connect(
+            host=hostik,
+            user=userik,
+            password=passwordik,
+            database=datab)
+        connection.autocommit = True
+        with connection.cursor() as cursor:
+            # Разделяем дату на число и месяц
+            day, month = date.split()
+
+            # Создаем безопасный SQL-запрос
+            query = sql.SQL("""
+                SELECT gorod, time, pogoda 
+                FROM History_pagoda 
+                WHERE login = %s 
+                AND date LIKE %s
+                ORDER BY time""")
+
+            # Выполняем запрос с параметрами
+            cursor.execute(query, (login, f"{day} {month}%"))
+
+            results = cursor.fetchall()
+
+            if results:
+                # Инициализируем списки для разных периодов времени
+                morning_data = []
+                lunch_data = []
+                evening_data = []
+                night_data = []
+
+                for city, time_str, temp in results:
+                    time_period = timeret(time_str)
+                    if city == 'Челябинск':
+                        city = 'Челябинске'
+                    elif city == 'Москва':
+                        city = 'Москве'
+                    elif city == 'Екатеринбург':
+                        city = 'Екатеринбурге'
+
+                    record = f"В {city} в {time_str} была температура: {temp}"
+
+                    if time_period == "Утро":
+                        morning_data.append(record)
+                    elif time_period == "После обеда":
+                        lunch_data.append(record)
+                    elif time_period == "Вечер":
+                        evening_data.append(record)
+                    elif time_period == "Ночь":
+                        night_data.append(record)
+
+                if kurs == 'Утро':
+                    return "\n".join(morning_data) if morning_data else x
+                elif kurs == 'Обед':
+                    return "\n".join(lunch_data) if lunch_data else x
+                elif kurs == 'Вечер':
+                    return "\n".join(evening_data) if evening_data else x
+                elif kurs == 'Ночь':
+                    return "\n".join(night_data) if night_data else x
+                else:
+                    return 'Нажмите пожалуйста на кнопку'
+            else:
+                return x  # Возвращаем сообщение, если результатов нет
+
+    except psycopg2.Error as e:
+        print(f"Ошибка базы данных: {e}")
+
+    except Exception as e:
+        print(f"Общая ошибка: {e}")
+
+    finally:
+        if connection:
+            connection.close()
+
+
+def upd(login, name):
+    try:
+        connection = psycopg2.connect(
+            host=hostik,
+            user=userik,
+            password=passwordik,
+            database=datab)
+        connection.autocommit = True
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT version();")
+            print(f"Server version: {cursor.fetchone()}")
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""INSERT INTO rega (login, name, date, time) VALUES
+                (%s, %s, %s, %s)""",
+                (login, name, razmen(get_weather_data('moscow'))[1], razmen(get_weather_data('moscow'))[0]))
+    except Exception as _ex:
+        print("[INFO] Error while working with PostgreSQL", _ex)
+    finally:
+        if connection:
+            connection.close()
+            print("[INFO] PostgreSQL connection closed")
+
+
+
+
+
+
+
+
+
+
+
+
+
