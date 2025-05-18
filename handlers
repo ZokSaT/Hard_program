@@ -1,0 +1,254 @@
+from aiogram import Bot, Dispatcher, types, F, Router
+from aiogram.filters import CommandStart, Command
+from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
+
+import Project.keyboards as pk
+from Project.Parsing import BTC, get_weather, get_html, get_znak, get_weather_rec, USD, EUR, CNY
+from Project.Pgadmin import update,  goo, upd
+from Project.FSM import Darka, Registered, Recom, Money
+
+router = Router()
+
+x = 'Возможно вы не пользовались измерением погоды в это время, попробуйте другой интервал'
+
+@router.message(CommandStart())
+async def cmd_startbot(message: Message, state: FSMContext):
+    await state.set_state(Registered.nem)
+    await message.answer('Здравствуйте, пройдите пожалуйста регистрацию')
+    await message.answer("Введите свое имя")
+
+@router.message(Registered.nem)
+async def FSM_reg_2(message: types.Message, state: FSMContext):
+    await state.update_data(nem=message.text)
+    data = await state.get_data()
+    user_id = message.from_user.id
+    upd(f'{user_id}', data['nem'])
+    await message.answer(f"Регистрация окончена, можете пользоваться ботом ", reply_markup=pk.klava_menu)
+    await state.clear()
+
+
+@router.message(F.text =="Главное меню")
+async def key_menu(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer('Вы попросили открыть главное меню', reply_markup=pk.klava_menu)
+
+
+@router.message(Command("help"))
+async def cmd_help(message: types.Message, state: FSMContext):
+    await state.clear()
+    await message.answer('Вы возвращены в главное меню', reply_markup=pk.klava_menu)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+@router.message(F.text == 'Валюты и крипта')
+async def key_valuta(message: types.Message, state: FSMContext):
+    await message.answer(f"Вот самые популярные", reply_markup=pk.klava_menu_money)
+    await state.set_state(Money.bablo)
+
+@router.message(F.text == 'Курс Bitcoin', Money.bablo)
+async def key_BTC(message: types.Message):
+    await message.answer(f"Курс Bitcoin сейчас {BTC()} ")
+
+@router.message(F.text == 'Доллар', Money.bablo)
+async def key_USD(message: types.Message):
+    await message.answer(f"Курс Доллара сейчас {USD()}руб. ")
+
+@router.message(F.text == 'Евро', Money.bablo)
+async def key_EUR(message: types.Message):
+    await message.answer(f"Курс Евро сейчас {EUR()}руб.")
+
+@router.message(F.text == 'Юань', Money.bablo)
+async def key_CNY(message: types.Message):
+    await message.answer(f"Курс Китайской валюты сейчас {CNY()}руб. ")
+
+#-----------------------------------------------------------------------------------------------------------------------
+@router.message(F.text == 'Погода')
+async def key_pogoda(message: types.Message, state: FSMContext):
+    await message.answer('Какой город вас интересует?', reply_markup=pk.klava_pogoda)
+    await state.set_state(Darka.gorodok)
+
+@router.callback_query(F.data == 'podrobno', Recom.timur)
+async def key_rec(callback: CallbackQuery, state: FSMContext ):
+    await callback.message.answer('Вот подробности', reply_markup=pk.klava_menu)
+    data = await state.get_data()
+    await callback.message.answer(f"{get_weather_rec(data['timur'])} ")
+
+#Одноразово#############################################################################################################
+@router.message(Darka.gorodok, F.text == 'Екатеринбург')
+async def key_ekat(message: types.Message, state: FSMContext):
+    await message.answer(f"Сейчас в Екатеринбурге {get_weather('yekaterinburg')} ", reply_markup=pk.klava_rec)
+    await state.set_state(Recom.timur)
+    await state.update_data(timur='yekaterinburg')
+    user_id = message.from_user.id
+    update(f'{user_id}', 'yekaterinburg')
+@router.message(Darka.gorodok, F.text == 'Челябинск')
+async def key_chel(message: types.Message, state: FSMContext):
+    await message.answer(f"Сейчас в Челябинске {get_weather('chelyabinsk')} ", reply_markup=pk.klava_rec)
+    await state.set_state(Recom.timur)
+    await state.update_data(timur='chelyabinsk')
+    user_id = message.from_user.id
+    update(f'{user_id}', 'chelyabinsk')
+@router.message(Darka.gorodok, F.text == 'Москва')
+async def key_mosc(message: types.Message, state: FSMContext):
+    await message.answer(f"Сейчас в Москве {get_weather('moscow')} ", reply_markup=pk.klava_rec)
+    await state.set_state(Recom.timur)
+    await state.update_data(timur='moscow')
+
+    user_id = message.from_user.id
+    update(f'{user_id}', 'moscow')
+###################################################################################################################
+#Зациклино==============================================================================================================
+@router.message(Recom.timur, F.text == 'Челябинск')
+async def repeat_chel(message: types.Message, state: FSMContext):
+    await message.answer(f"Сейчас в Челябинске {get_weather('chelyabinsk')}", reply_markup=pk.klava_rec)
+    await state.update_data(timur='chelyabinsk')
+    user_id = message.from_user.id
+    update(f'{user_id}', 'chelyabinsk')
+
+@router.message(Recom.timur, F.text == 'Москва')
+async def key_mosc(message: types.Message, state: FSMContext):
+    await message.answer(f"Сейчас в Москве {get_weather('moscow')} ", reply_markup=pk.klava_rec)
+    await state.update_data(timur='moscow')
+    user_id = message.from_user.id
+    update(f'{user_id}', 'moscow')
+
+@router.message(Recom.timur, F.text == 'Екатеринбург')
+async def key_ekat(message: types.Message, state: FSMContext):
+    await message.answer(f"Сейчас в Екатеринбурге {get_weather('yekaterinburg')} ", reply_markup=pk.klava_rec)
+    await state.update_data(timur='yekaterinburg')
+    user_id = message.from_user.id
+    update(f'{user_id}', 'yekaterinburg')
+#=================================================================================================================
+@router.message(F.text == 'История')
+async def key_history(message: types.Message, state: FSMContext ):
+    await state.clear()
+    await state.set_state(Darka.month)
+    await message.answer(f"Выберите дату: Число месяц. Пример: 10 мая")
+
+@router.message(Darka.month)
+async def FSM_history_date(message: types.Message, state: FSMContext):
+    await state.update_data(month=message.text)
+    await message.answer(f"Выберите нужный интервал", reply_markup=pk.klava_history_date)
+    await state.set_state(Darka.setd)
+
+
+@router.callback_query(Darka.setd, F.data == 'Ночь')
+async def history_date_night(callback: types.CallbackQuery,  state: FSMContext):
+    await state.update_data(setd=callback.data)
+    await callback.answer()
+    data = await state.get_data()
+    user_id = str(callback.from_user.id)
+    await callback.message.answer(f'Ночью {data["month"]}')
+    await callback.message.answer(f' {goo(user_id, data["month"], data['setd'])}')
+    if goo(user_id, data["month"], data['setd']) == x:
+        await state.set_state(Darka.setd)
+    else:
+        await  state.clear()
+
+@router.callback_query(Darka.setd, F.data == 'Утро')
+async def history_date_morning(callback: types.CallbackQuery,  state: FSMContext):
+    await state.update_data(setd=callback.data)
+    await callback.answer()
+    data = await state.get_data()
+    user_id = str(callback.from_user.id)
+    await callback.message.answer(f'Утром {data["month"]}')
+    await callback.message.answer(f' {goo(user_id, data["month"], data['setd'])}')
+    if goo(user_id, data["month"], data['setd']) == x:
+        await state.set_state(Darka.setd)
+    else:
+        await  state.clear()
+
+@router.callback_query(Darka.setd, F.data == 'Обед')
+async def history_date_lunch(callback: types.CallbackQuery,  state: FSMContext):
+    await state.update_data(setd=callback.data)
+    await callback.answer()
+    data = await state.get_data()
+    user_id = str(callback.from_user.id)
+    await callback.message.answer (f'В обед {data["month"]}')
+    await callback.message.answer(f' {goo(user_id, data["month"], data['setd'])}')
+    if goo(user_id, data["month"], data['setd']) == x:
+        await state.set_state(Darka.setd)
+    else:
+        await  state.clear()
+
+@router.callback_query(Darka.setd, F.data == 'Вечер')
+async def history_date_ever(callback: types.CallbackQuery,  state: FSMContext):
+    await state.update_data(setd=callback.data)
+    await callback.answer()
+    data = await state.get_data()
+    user_id = str(callback.from_user.id)
+    await callback.message.answer(f'Вечером {data["month"]}')
+    await callback.message.answer(f' {goo(user_id, data["month"], data['setd'])}')
+    if goo(user_id, data["month"], data['setd']) == x:
+        await state.set_state(Darka.setd)
+    else:
+        await  state.clear()
+
+# ----------------------------------------------------------------------------------------
+@router.message(F.text == 'Гороскоп')
+async def key_goroskop(message: types.Message):
+    await message.answer('Какая дата вас интересует?', reply_markup=pk.klava_znak)
+#-----------------------------------------------------------------------------------------
+
+@router.callback_query(F.data == 'aries')
+async def key_gor_oven(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Овен')
+    await callback.message.answer(f'{get_znak('aries')}')
+
+@router.callback_query(F.data == 'taurus')
+async def key_gor_taurus(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Телец')
+    await callback.message.answer(f'{get_znak('taurus')}')
+
+@router.callback_query(F.data == 'gemini')
+async def key_gor_gemini(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Близнецы')
+    await callback.message.answer(f'{get_znak('gemini')}')
+
+@router.callback_query(F.data == 'cancer')
+async def key_gor_cancer(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Рак')
+    await callback.message.answer(f'{get_znak('cancer')}')
+
+@router.callback_query(F.data == 'leo')
+async def key_gor_leo(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Лев')
+    await callback.message.answer(f'{get_znak('leo')}')
+
+@router.callback_query(F.data == 'virgo')
+async def key_gor_virgo(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Дева')
+    await callback.message.answer(f'{get_znak('virgo')}')
+
+@router.callback_query(F.data == 'libra')
+async def key_gor_libra(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Весы')
+    await callback.message.answer(f'{get_znak('libra')}')
+
+@router.callback_query(F.data == 'scorpio')
+async def key_gor_scorpio(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Скорпион')
+    await callback.message.answer(f'{get_znak('scorpio')}')
+
+@router.callback_query(F.data == 'sagittarius')
+async def key_gor_sagittarius(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Стрелец')
+    await callback.message.answer(f'{get_znak('sagittarius')}')
+
+@router.callback_query(F.data == 'capricorn')
+async def key_gor_capricorn(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Козерог')
+    await callback.message.answer(f'{get_znak('capricorn')}')
+
+@router.callback_query(F.data == 'aquarius')
+async def key_gor_aquarius(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Водолей')
+    await callback.message.answer(f'{get_znak('aquarius')}')
+
+@router.callback_query(F.data == 'pisces')
+async def key_gor_pisces(callback: CallbackQuery):
+    await callback.message.answer(f'Вы выбрали знак Рыбы')
+    await callback.message.answer(f'{get_znak('pisces')}')
+
+
